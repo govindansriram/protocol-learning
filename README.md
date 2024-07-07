@@ -23,4 +23,4 @@ Understand protocols make HTTP servers
 1) ~~Add Connection Limits~~
 2) ~~Add Time limit for requests~~
 3) ~~Process requests~~
-6) Add byte streaming
+6) ~~Add byte streaming~~
