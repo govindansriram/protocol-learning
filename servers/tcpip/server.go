@@ -19,6 +19,12 @@ type Server struct {
 	maxReadWaitTimeSeconds   uint8
 	bufferSizeKB             uint32
 	port                     uint16
+	stream                   bool
+}
+
+type packet struct {
+	err error
+	pos int
 }
 
 func GetDefaultSettings() Server {
@@ -26,8 +32,21 @@ func GetDefaultSettings() Server {
 		maxConnections:           1,
 		maxConnectionTimeSeconds: 1000,
 		maxReadWaitTimeSeconds:   5,
-		bufferSizeKB:             2,
+		bufferSizeKB:             1,
 		port:                     8080,
+		stream:                   false,
+	}
+}
+
+func readConnection(
+	connection net.Conn,
+	buffer *[]byte,
+	packetChan chan<- packet,
+) {
+	n, err := connection.Read(*buffer)
+	packetChan <- packet{
+		err: err,
+		pos: n,
 	}
 }
 
@@ -101,53 +120,135 @@ func handleConnection(
 		time.Now().Add(time.Second*time.Duration(maxConnectionTimeSeconds)))
 
 	defer parentCancelFunc()
-
 	buffer := make([]byte, bufferSizeKB*1024)
-
-	type packet struct {
-		err error
-		pos int
-	}
-
 	packetChan := make(chan packet)
 
-	read := func(connection net.Conn) {
-		n, err := connection.Read(buffer)
-		packetChan <- packet{
-			err: err,
-			pos: n,
+	go readConnection(conn, &buffer, packetChan)
+
+	var dtype uint8
+	proceed := true
+	var err error
+
+	localContext, localCancel := context.WithDeadline(
+		ctx,
+		time.Now().Add(time.Second*time.Duration(maxReadWaitTimeSeconds)),
+	)
+
+	fullBuffer := make([]byte, 0, bufferSizeKB*1024*10)
+
+	clearConn := func(
+		closeParent,
+		closeLocal,
+		closeCon bool,
+		localCancelFunc context.CancelFunc) {
+
+		if closeParent {
+			parentCancelFunc()
 		}
+
+		if closeLocal {
+			localCancelFunc()
+		}
+
+		if closeCon {
+			conn.Close()
+			<-channel
+		}
+	}
+
+	select {
+	case packet := <-packetChan:
+		currentBuffer := make([]byte, packet.pos)
+		copy(currentBuffer, buffer)
+		proceed, dtype, err = processState(&currentBuffer, true)
+
+		if err != nil {
+			log.Printf("received err %v from process id: %d\n", err, processId)
+			clearConn(true, true, true, localCancel)
+			return
+		}
+
+		fullBuffer = append(fullBuffer, currentBuffer[2:]...)
+
+	case <-ctx.Done():
+	case <-localContext.Done():
+		log.Printf("connection timed out from process id: %d\n", processId)
+		clearConn(true, true, true, localCancel)
+		return
+	}
+
+	localCancel()
+
+	if !proceed {
+		clearConn(true, true, true, localCancel)
+		processBytes(&fullBuffer, dtype)
+		return
 	}
 
 	for {
 		fmt.Printf("reading from process id: %d\n", processId)
-		go read(conn)
-
 		localContext, localCancel := context.WithDeadline(
 			ctx,
 			time.Now().Add(time.Second*time.Duration(maxReadWaitTimeSeconds)),
 		)
 
+		go readConnection(conn, &buffer, packetChan)
+
 		select {
 		case <-ctx.Done():
 		case <-localContext.Done():
 			fmt.Printf("connection timed out from process id: %d\n", processId)
-			parentCancelFunc()
-			localCancel()
-			conn.Close()
-			<-channel
+			clearConn(true, true, true, localCancel)
 			return
 		case pack := <-packetChan:
 			if pack.err != nil {
 				log.Printf("process id %d received err %v \n", processId, pack.err)
-				conn.Close()
-				localCancel()
-				<-channel
+				clearConn(true, true, true, localCancel)
 				return
 			} else {
-				time.Sleep(10 * time.Second)
-				fmt.Printf("received data from process id %d: %s \n", processId, buffer[:pack.pos])
+				currentBuffer := make([]byte, pack.pos)
+				copy(currentBuffer, buffer)
+				proceed, _, err = processState(&currentBuffer, false)
+
+				if err != nil {
+					log.Printf("process id %d received err %v \n", processId, pack.err)
+					clearConn(true, true, true, localCancel)
+				}
+
+				fullBuffer = append(fullBuffer, currentBuffer[1:]...)
+
+				if !proceed {
+					clearConn(true, true, true, localCancel)
+					processBytes(&fullBuffer, dtype)
+					return
+				}
 			}
 		}
+		localCancel()
+	}
+}
+
+func processBytes(pbuffer *[]byte, dtype uint8) {
+	switch dtype {
+	case uint8(i8):
+		fmt.Println(extractInt8(pbuffer))
+	case uint8(ui8):
+		fmt.Println(extractUint8(pbuffer))
+	case uint8(i16):
+		fmt.Println(extractint16(pbuffer))
+	case uint8(ui16):
+		fmt.Println(extractUint16(pbuffer))
+	case uint8(i32):
+		fmt.Println(extractInt32(pbuffer))
+	case uint8(ui32):
+		fmt.Println(extractUint32(pbuffer))
+	case uint8(i64):
+		fmt.Println(extractInt64(pbuffer))
+	case uint8(ui64):
+		fmt.Println(extractUint64(pbuffer))
+	case uint8(f32):
+		fmt.Println(extractFloat32(pbuffer))
+	case uint8(f64):
+		fmt.Println(extractFloat64(pbuffer))
 	}
 }
