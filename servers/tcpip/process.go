@@ -144,19 +144,21 @@ func extractUint16(
 		return nil, err
 	}
 
-	sequence := make([]uint16, 0, len(*packet)/2)
+	jump := 2
 
-	for i := 0; i < len(sequence); i += 2 {
+	sequence := make([]uint16, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			binary.LittleEndian.Uint16((*packet)[i:i+2]),
+			binary.LittleEndian.Uint16((*packet)[i:i+jump]),
 		)
 	}
 
 	return &sequence, nil
 }
 
-func extractint16(
+func extractInt16(
 	packet *[]byte,
 ) (*[]int16, error) {
 
@@ -164,12 +166,14 @@ func extractint16(
 		return nil, err
 	}
 
-	sequence := make([]int16, 0, len(*packet)/2)
+	jump := 2
 
-	for i := 0; i < len(sequence); i += 2 {
+	sequence := make([]int16, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			int16(binary.LittleEndian.Uint16((*packet)[i:i+2])),
+			int16(binary.LittleEndian.Uint16((*packet)[i:i+jump])),
 		)
 	}
 
@@ -184,12 +188,14 @@ func extractUint32(
 		return nil, err
 	}
 
-	sequence := make([]uint32, 0, len(*packet)/4)
+	jump := 4
 
-	for i := 0; i < len(sequence); i += 4 {
+	sequence := make([]uint32, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			binary.LittleEndian.Uint32((*packet)[i:i+4]),
+			binary.LittleEndian.Uint32((*packet)[i:i+jump]),
 		)
 	}
 
@@ -204,12 +210,14 @@ func extractInt32(
 		return nil, err
 	}
 
-	sequence := make([]int32, 0, len(*packet)/4)
+	jump := 4
 
-	for i := 0; i < len(sequence); i += 4 {
+	sequence := make([]int32, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			int32(binary.LittleEndian.Uint32((*packet)[i:i+4])),
+			int32(binary.LittleEndian.Uint32((*packet)[i:i+jump])),
 		)
 	}
 
@@ -224,12 +232,14 @@ func extractUint64(
 		return nil, err
 	}
 
-	sequence := make([]uint64, 0, len(*packet)/8)
+	jump := 8
 
-	for i := 0; i < len(sequence); i += 8 {
+	sequence := make([]uint64, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			binary.LittleEndian.Uint64((*packet)[i:i+8]),
+			binary.LittleEndian.Uint64((*packet)[i:i+jump]),
 		)
 	}
 
@@ -244,12 +254,14 @@ func extractInt64(
 		return nil, err
 	}
 
-	sequence := make([]int64, 0, len(*packet)/8)
+	jump := 8
 
-	for i := 0; i < len(sequence); i += 8 {
+	sequence := make([]int64, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
 		sequence = append(
 			sequence,
-			int64(binary.LittleEndian.Uint64((*packet)[i:i+8])),
+			int64(binary.LittleEndian.Uint64((*packet)[i:i+jump])),
 		)
 	}
 
@@ -264,10 +276,12 @@ func extractFloat32(
 		return nil, err
 	}
 
-	sequence := make([]float32, 0, len(*packet)/4)
+	jump := 4
 
-	for i := 0; i < len(sequence); i += 4 {
-		floatAsUint := binary.LittleEndian.Uint32((*packet)[i : i+4])
+	sequence := make([]float32, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
+		floatAsUint := binary.LittleEndian.Uint32((*packet)[i : i+jump])
 		sequence = append(
 			sequence,
 			math.Float32frombits(floatAsUint),
@@ -285,10 +299,12 @@ func extractFloat64(
 		return nil, err
 	}
 
-	sequence := make([]float64, 0, len(*packet)/8)
+	jump := 8
 
-	for i := 0; i < len(sequence); i += 8 {
-		floatAsUint := binary.LittleEndian.Uint64((*packet)[i : i+8])
+	sequence := make([]float64, 0, len(*packet)/jump)
+
+	for i := 0; i < len(*packet); i += jump {
+		floatAsUint := binary.LittleEndian.Uint64((*packet)[i : i+jump])
 		sequence = append(
 			sequence,
 			math.Float64frombits(floatAsUint),

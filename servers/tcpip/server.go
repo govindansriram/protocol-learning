@@ -235,7 +235,7 @@ func processBytes(pbuffer *[]byte, dtype uint8) {
 	case uint8(ui8):
 		fmt.Println(extractUint8(pbuffer))
 	case uint8(i16):
-		fmt.Println(extractint16(pbuffer))
+		fmt.Println(extractInt16(pbuffer))
 	case uint8(ui16):
 		fmt.Println(extractUint16(pbuffer))
 	case uint8(i32):
