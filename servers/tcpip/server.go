@@ -29,9 +29,9 @@ type packet struct {
 
 func GetDefaultSettings() Server {
 	return Server{
-		maxConnections:           1,
+		maxConnections:           4,
 		maxConnectionTimeSeconds: 1000,
-		maxReadWaitTimeSeconds:   5,
+		maxReadWaitTimeSeconds:   10,
 		bufferSizeKB:             1,
 		port:                     8080,
 		stream:                   false,
@@ -50,7 +50,7 @@ func readConnection(
 	}
 }
 
-func (s Server) Start() {
+func (s Server) Start(kill <-chan struct{}) {
 	server := fmt.Sprintf("localhost:%d", s.port)
 
 	sigChan := make(chan os.Signal, 1)
@@ -68,8 +68,10 @@ func (s Server) Start() {
 
 	defer listener.Close()
 
-	go func() {
-		<-sigChan
+	alive := true
+
+	shutdown := func() {
+		alive = false
 		fmt.Println("\n system exiting gracefully")
 
 		for _, c := range connections {
@@ -77,12 +79,22 @@ func (s Server) Start() {
 		}
 
 		listener.Close()
+	}
+
+	go func() {
+		<-sigChan
+		shutdown()
 		os.Exit(0)
+	}()
+
+	go func() {
+		<-kill
+		shutdown()
 	}()
 
 	workers := make(chan struct{}, s.maxConnections)
 
-	for {
+	for alive {
 		workers <- struct{}{}
 		conn, err := listener.Accept()
 

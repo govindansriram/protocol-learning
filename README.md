@@ -1,5 +1,10 @@
 # Learning Protocols
 
+Created a protocol that takes in and processes arrays
+
+## Status done
+On to http server
+
 ## WARNINGS
 Meant for learning only
 
@@ -17,11 +22,5 @@ Understand protocols make HTTP servers
 
 1) ~~Add Connection Limits~~
 2) ~~Add Time limit for requests~~
-3) Process requests
-4) Add Configuration file
-5) Add byte collection
+3) ~~Process requests~~
 6) Add byte streaming
-7) Add Privacy & Encryption
-
-## How to use
-COMING SOON
